@@ -15,7 +15,7 @@
             position: relative;
             min-height: 100vh;
         }
-        /* تعديل العلامة المائية لتصبح واضحة ومرئية 100% خلف الواجهة */
+        /* تعديل العلامة المائية لتصبح واضحة ومرئية خلف الواجهة */
         .watermark {
             position: fixed;
             top: 55%;
@@ -24,14 +24,14 @@
             width: 85vw;
             max-width: 500px;
             height: auto;
-            opacity: 0.15; /* تم زيادة الوضوح لتظهر بشكل ممتاز */
+            opacity: 0.15;
             pointer-events: none; 
             z-index: 0;
         }
         .container { 
-            max-width: 950px; 
+            max-width: 1000px; 
             margin: 20px auto; 
-            background: rgba(255, 255, 255, 0.85); /* تقليل خلفية الصندوق لتبرز العلامة المائية من خلفه */
+            background: rgba(255, 255, 255, 0.88);
             padding: 30px; 
             border-radius: 12px; 
             box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
@@ -47,10 +47,10 @@
             font-weight: 900; 
             text-shadow: 1px 1px 2px rgba(0,0,0,0.05);
         }
-        .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .form-group { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
         label { font-weight: bold; display: block; margin-bottom: 8px; color: #4a5568; }
-        input { width: 100%; padding: 11px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 16px; background: white; }
-        input:disabled { background-color: #edf2f7; color: #718096; cursor: not-allowed; }
+        input, select { width: 100%; padding: 11px; border: 1px solid #cbd5e0; border-radius: 6px; box-sizing: border-box; font-size: 16px; background: white; }
+        input:disabled, select:disabled { background-color: #edf2f7; color: #718096; cursor: not-allowed; }
         .btn-submit { background-color: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; text-align: center; margin-top: 10px; }
         th, td { padding: 12px; border: 1px solid #e2e8f0; }
@@ -97,8 +97,20 @@
                 <datalist id="medicinesList"></datalist>
             </div>
             <div>
+                <label>النوع (الكتكوري)</label>
+                <select id="medUnit">
+                    <option value="صندوق">صندوق</option>
+                    <option value="شريط">شريط</option>
+                    <option value="كبسولة/حبة">كبسولة/حبة</option>
+                    <option value="علبة شراب">علبة شراب</option>
+                    <option value="فيال/أمبول">فيال/أمبول</option>
+                    <option value="مرهم/كريم">مرهم/كريم</option>
+                    <option value="بخاخ">بخاخ</option>
+                </select>
+            </div>
+            <div>
                 <label>الكمية الكلية</label>
-                <input type="number" id="totalQty" min="0" placeholder="مثال: 1000" required>
+                <input type="number" id="totalQty" min="0" placeholder="مثال: 100" required>
             </div>
             <div>
                 <label>الكمية المسحوبة الحالية</label>
@@ -113,6 +125,7 @@
             <thead>
                 <tr>
                     <th>اسم العلاج</th>
+                    <th>النوع</th>
                     <th>الكمية الكلية</th>
                     <th>مجموع المسحوب</th>
                     <th>المتبقي في المخزن</th>
@@ -135,6 +148,7 @@
     const submitBtn = document.getElementById('submitBtn');
     const editIndexInput = document.getElementById('editIndex');
     const medNameInput = document.getElementById('medName');
+    const medUnitSelect = document.getElementById('medUnit');
     const totalQtyInput = document.getElementById('totalQty');
     const medicinesList = document.getElementById('medicinesList');
     const statusBar = document.getElementById('statusBar');
@@ -142,10 +156,12 @@
     function renderTable(shouldSync = true) {
         medicineTableBody.innerHTML = '';
         medicines.forEach((med, index) => {
+            const unit = med.unit || 'صندوق';
             const remaining = med.total - med.withdrawn;
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td><strong>${med.name}</strong></td>
+                <td style="color:#718096; font-size: 14px;">${unit}</td>
                 <td style="color:#2c7a7b; font-weight:bold;">${med.total}</td>
                 <td style="color:#dd6b20; font-weight:bold;">${med.withdrawn}</td>
                 <td style="color: ${remaining <= 10 ? '#e53e3e' : '#2d3748'}; font-weight: bold;">${remaining}</td>
@@ -206,25 +222,30 @@
         const existingMed = medicines.find(m => m.name.toLowerCase() === name);
         if (existingMed && editIndexInput.value === "-1") {
             totalQtyInput.value = existingMed.total;
+            medUnitSelect.value = existingMed.unit || 'صندوق';
             totalQtyInput.disabled = true;
+            medUnitSelect.disabled = true;
         } else if (editIndexInput.value === "-1") {
             totalQtyInput.disabled = false;
+            medUnitSelect.disabled = false;
         }
     });
 
     medicineForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const name = medNameInput.value.trim();
+        const unit = medUnitSelect.value;
         const total = parseInt(totalQtyInput.value);
         const withdrawn = parseInt(document.getElementById('withdrawnQty').value);
         const editIndex = parseInt(editIndexInput.value);
 
         if (editIndex > -1) {
             if(withdrawn > total) { alert('خطأ: المسحوب أكبر من الكلي!'); return; }
-            medicines[editIndex] = { name, total, withdrawn };
+            medicines[editIndex] = { name, unit, total, withdrawn };
             submitBtn.innerText = "تأكيد العملية (إضافة / سحب)";
             editIndexInput.value = "-1";
             totalQtyInput.disabled = false;
+            medUnitSelect.disabled = false;
         } else {
             const existingIndex = medicines.findIndex(m => m.name.toLowerCase() === name.toLowerCase());
             if (existingIndex > -1) {
@@ -236,10 +257,11 @@
                 medicines[existingIndex].withdrawn = newWithdrawnSum;
             } else {
                 if(withdrawn > total) { alert('خطأ: المسحوب أكبر من الكلي!'); return; }
-                medicines.push({ name, total, withdrawn });
+                medicines.push({ name, unit, total, withdrawn });
             }
         }
         totalQtyInput.disabled = false;
+        medUnitSelect.disabled = false;
         medicineForm.reset();
         renderTable(true);
     });
@@ -247,9 +269,11 @@
     window.editMedicine = function(index) {
         const med = medicines[index];
         medNameInput.value = med.name;
+        medUnitSelect.value = med.unit || 'صندوق';
         totalQtyInput.value = med.total;
         document.getElementById('withdrawnQty').value = med.withdrawn;
         totalQtyInput.disabled = false; 
+        medUnitSelect.disabled = false;
         editIndexInput.value = index;
         submitBtn.innerText = `حفظ تعديلات: ${med.name}`;
         window.scrollTo({top: 0, behavior: 'smooth'});
@@ -261,6 +285,7 @@
             renderTable(true);
             if(parseInt(editIndexInput.value) === index){
                 totalQtyInput.disabled = false;
+                medUnitSelect.disabled = false;
                 medicineForm.reset();
                 submitBtn.innerText = "تأكيد العملية (إضافة / سحب)";
                 editIndexInput.value = "-1";
