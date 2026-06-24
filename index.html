@@ -110,8 +110,8 @@
                 <input type="number" id="totalQty" min="0" placeholder="مثال: 100" required>
             </div>
             <div>
-                <label>الكمية المسحوبة الحالية</label>
-                <input type="number" id="withdrawnQty" min="0" placeholder="0" required>
+                <label>الكمية المسحوبة الحالية (اختياري)</label>
+                <input type="number" id="withdrawnQty" min="0" placeholder="0">
             </div>
         </div>
         <button type="submit" class="btn-submit" id="submitBtn">تأكيد العملية (إضافة / سحب)</button>
@@ -214,18 +214,40 @@
         });
     }
 
-    // تم حذف السطر القديم بالكامل لضمان عدم إجبار المتصفح على أي نوع قديم وترك الاختيار حر تماماً للطبيب
+    // تعبئة البيانات تلقائياً للمساعدة عند كتابة علاج مكرر
+    medNameInput.addEventListener('input', function() {
+        const name = this.value.trim().toLowerCase();
+        const existingMed = medicines.find(m => m.name.toLowerCase() === name);
+        if (existingMed && editIndexInput.value === "-1") {
+            totalQtyInput.value = existingMed.total;
+            medUnitSelect.value = existingMed.unit || 'صندوق';
+        }
+    });
+
     medicineForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const name = medNameInput.value.trim();
         const unit = medUnitSelect.value;
         const total = parseInt(totalQtyInput.value);
-        const withdrawn = parseInt(document.getElementById('withdrawnQty').value);
+        
+        // إذا تركت خانة المسحوب فارغة تصبح صفر تلقائياً
+        const withdrawnInput = document.getElementById('withdrawnQty').value;
+        const withdrawn = withdrawnInput === "" ? 0 : parseInt(withdrawnInput);
+        
         const editIndex = parseInt(editIndexInput.value);
 
         if (editIndex > -1) {
             if(withdrawn > total) { alert('خطأ: المسحوب أكبر من الكلي!'); return; }
             medicines[editIndex] = { name, unit, total, withdrawn };
+            
+            // في حال تم تعديل اسم مكرر، نقوم بتوحيد وتثبيت الكمية الكلية والنوع على كل الأسطر المتشابهة
+            medicines.forEach(m => {
+                if(m.name.toLowerCase() === name.toLowerCase()) {
+                    m.total = total;
+                    m.unit = unit;
+                }
+            });
+            
             submitBtn.innerText = "تأكيد العملية (إضافة / سحب)";
             editIndexInput.value = "-1";
         } else {
@@ -236,8 +258,14 @@
                     alert(`خطأ: مجموع السحوبات الحالي (${newWithdrawnSum}) يتجاوز الكمية الكلية الجديدة (${total})!`);
                     return;
                 }
-                medicines[existingIndex].total = total;
-                medicines[existingIndex].unit = unit; // يتم تحديث النوع هنا فوراً حسب اختيارك الجديد بدون أخطاء
+                
+                // تحديث وتثبيت الكمية الكلية والنوع لجميع الأسماء المشابهة فوراً
+                medicines.forEach(m => {
+                    if(m.name.toLowerCase() === name.toLowerCase()) {
+                        m.total = total;
+                        m.unit = unit;
+                    }
+                });
                 medicines[existingIndex].withdrawn = newWithdrawnSum;
             } else {
                 if(withdrawn > total) { alert('خطأ: المسحوب أكبر من الكلي!'); return; }
@@ -253,7 +281,7 @@
         medNameInput.value = med.name;
         medUnitSelect.value = med.unit || 'صندوق';
         totalQtyInput.value = med.total;
-        document.getElementById('withdrawnQty').value = med.withdrawn;
+        document.getElementById('withdrawnQty').value = med.withdrawn === 0 ? "" : med.withdrawn;
         editIndexInput.value = index;
         submitBtn.innerText = `حفظ تعديلات: ${med.name}`;
         window.scrollTo({top: 0, behavior: 'smooth'});
