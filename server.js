@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// إعداد السيرفر ليعرض واجهة الصيدلية المحدثة مباشرة
+// تشغيل السيرفر وعرض الواجهة المعدلة بالكامل
 app.get('/', (req, res) => {
     res.send(`
 <!DOCTYPE html>
@@ -29,18 +29,16 @@ app.get('/', (req, res) => {
             position: relative;
         }
 
-        /* إضافة الشعار المائي في خلفية الصفحة بالكامل لتصميم فخم */
+        /* تصميم الشعار المائي البرمجي في الخلفية */
         body::before {
-            content: "";
+            content: "⚕";
             position: fixed;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            width: 500px;
-            height: 500px;
-            background: url('https://upload.wikimedia.org/wikipedia/commons/e/e0/Bowl_of_Hygieia_alternative.svg') no-repeat center;
-            background-size: contain;
-            opacity: 0.04; /* درجة الشفافية المائية */
+            font-size: 25rem;
+            color: var(--primary-color);
+            opacity: 0.03; /* درجة الشفافية المائية */
             z-index: -1;
             pointer-events: none;
         }
@@ -51,15 +49,15 @@ app.get('/', (req, res) => {
             padding: 0 20px;
         }
 
-        /* تصميم اسم الصيدلية بخط كبير، عريض، وعميق */
+        /* خط عميق وكبير وعريض لاسم الصيدلية */
         .pharmacy-title {
             text-align: center;
-            font-size: 3rem;
+            font-size: 3.2rem;
             font-weight: 900;
             color: var(--primary-color);
             margin-bottom: 5px;
             letter-spacing: 1px;
-            text-shadow: 2px 3px 6px rgba(49, 128, 132, 0.25);
+            text-shadow: 2px 4px 8px rgba(49, 128, 132, 0.3);
         }
 
         .status-bar {
@@ -82,7 +80,6 @@ app.get('/', (req, res) => {
             margin-bottom: 30px;
         }
 
-        /* تصميم حقول الإدخال بنفس توزيع الصورة الأصلية */
         .form-row {
             display: grid;
             grid-template-columns: 2fr 1.5fr 1fr;
@@ -123,19 +120,17 @@ app.get('/', (req, res) => {
             background-color: #fff;
         }
 
-        /* حقل الكمية المدمج مع الفئة بجانبه */
-        .qty-input-container {
+        .qty-container {
             display: flex;
             gap: 5px;
         }
-        
-        .qty-input-container input {
+
+        .qty-container input {
             flex: 2;
         }
-        
-        .qty-input-container select {
-            flex: 1.5;
-            min-width: 90px;
+
+        .qty-container select {
+            flex: 1.2;
             background-color: #f0f4f5;
             font-weight: 600;
         }
@@ -151,7 +146,6 @@ app.get('/', (req, res) => {
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.2s;
-            margin-top: 10px;
             box-shadow: 0 4px 12px rgba(49, 128, 132, 0.2);
         }
 
@@ -159,7 +153,6 @@ app.get('/', (req, res) => {
             background-color: var(--primary-hover);
         }
 
-        /* تنسيق جدول عرض المخزن الموحد كالصورة الأصلية */
         .table-container {
             overflow-x: auto;
         }
@@ -168,7 +161,6 @@ app.get('/', (req, res) => {
             width: 100%;
             border-collapse: collapse;
             text-align: center;
-            margin-top: 10px;
         }
 
         th {
@@ -176,30 +168,22 @@ app.get('/', (req, res) => {
             color: white;
             padding: 14px;
             font-weight: 600;
-            font-size: 1rem;
         }
-
-        th:first-child { border-top-right-radius: 8px; }
-        th:last-child { border-top-left-radius: 8px; }
 
         td {
             padding: 14px;
             border-bottom: 1px solid #e0e0e0;
             font-size: 1rem;
-            background-color: #ffffff;
         }
-
-        tr:last-child td:first-child { border-bottom-right-radius: 8px; }
-        tr:last-child td:last-child { border-bottom-left-radius: 8px; }
 
         .search-box {
             margin-bottom: 20px;
             width: 100%;
-            box-sizing: border-box;
             padding: 12px;
             border: 1px solid #b9dcde;
             border-radius: 8px;
             background-color: #f7fbfc;
+            box-sizing: border-box;
         }
 
         .btn-delete {
@@ -208,66 +192,27 @@ app.get('/', (req, res) => {
             color: #d9534f;
             cursor: pointer;
             font-size: 1.1rem;
-            padding: 5px;
-            border-radius: 4px;
-        }
-
-        .btn-delete:hover {
-            background-color: #fdf2f2;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,255,255,0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            display: none;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary-color);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
 
-    <div class="loading-overlay" id="loadingOverlay">
-        <div class="spinner"></div>
-    </div>
-
     <div class="container">
         <div class="pharmacy-title">صيدلية محمد غسان الحديدي</div>
-        
-        <div class="status-bar">
-            <i class="fas fa-sync-alt fa-spin" style="margin-left: 5px;"></i>
-            يعمل بالوضع المستقر والمزامنة متوفرة محلياً وعالمياً أونلاين
-        </div>
+        <div class="status-bar">يعمل بالوضع المستقر والمزامنة متوفرة محلياً وعالمياً أونلاين</div>
 
         <div class="card">
             <form id="medicineForm">
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="medName">اسم العلاج</label>
-                        <input type="text" id="medName" required placeholder="اكتب أو اختر العلاج...">
+                        <label>اسم العلاج</label>
+                        <input type="text" id="medName" required placeholder="اكتب اسم العلاج...">
                     </div>
                     
                     <div class="form-group">
-                        <label for="medQty">الكمية الكلية والفرعية</label>
-                        <div class="qty-input-container">
-                            <input type="number" id="medQty" min="1" required placeholder="مثال: 1000">
+                        <label>الكمية والفئة</label>
+                        <div class="qty-container">
+                            <input type="number" id="medQty" min="1" required placeholder="10">
                             <select id="unitType">
                                 <option value="صندوق">صندوق</option>
                                 <option value="شريط">شريط</option>
@@ -278,19 +223,19 @@ app.get('/', (req, res) => {
                     </div>
 
                     <div class="form-group">
-                        <label for="actionType">نوع العملية</label>
+                        <label>نوع العملية</label>
                         <select id="actionType">
                             <option value="add">إضافة (+)</option>
                             <option value="subtract">سحب (-)</option>
                         </select>
                     </div>
                 </div>
-                <button type="submit" class="btn-submit">تأكيد العملية (إضافة / سحب)</button>
+                <button type="submit" class="btn-submit">تأكيد العملية</button>
             </form>
         </div>
 
         <div class="card">
-            <input type="text" id="searchInp" class="search-box" placeholder="🔍 ابحث في المخزن الحالي أونلاين بشكل سريع...">
+            <input type="text" id="searchInp" class="search-box" placeholder="🔍 ابحث في المخزن الحالي...">
             <div class="table-container">
                 <table>
                     <thead>
@@ -299,11 +244,10 @@ app.get('/', (req, res) => {
                             <th>الكمية الكلية</th>
                             <th>مجموع المسحوب</th>
                             <th>المتبقي في المخزن</th>
-                            <th>إجراءات التحكم</th>
+                            <th>إجراءات</th>
                         </tr>
                     </thead>
-                    <tbody id="medicineTableBody">
-                        </tbody>
+                    <tbody id="medicineTableBody"></tbody>
                 </table>
             </div>
         </div>
@@ -312,46 +256,26 @@ app.get('/', (req, res) => {
     <script>
         const DB_URL = 'https://api.jsonbin.io/v3/b/66786638ad19ca34f87cf7a9';
         const MASTER_KEY = '$2a$10$W23M2vF9UoXNfNfev9p8vOzeqO.mX1N5Yp8.G2S8F3M5Fm3kK8Kqy';
-
         let inventory = {};
 
-        function showLoading(show) {
-            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
-        }
-
         async function fetchInventory() {
-            showLoading(true);
             try {
-                const res = await fetch(DB_URL + '/latest', {
-                    headers: { 'X-Master-Key': MASTER_KEY }
-                });
+                const res = await fetch(DB_URL + '/latest', { headers: { 'X-Master-Key': MASTER_KEY } });
                 const data = await res.json();
                 inventory = data.record || {};
                 renderTable();
-            } catch (err) {
-                console.error("خطأ جلب البيانات:", err);
-            } finally {
-                showLoading(false);
-            }
+            } catch (err) { console.error(err); }
         }
 
         async function saveInventory() {
-            showLoading(true);
             try {
                 await fetch(DB_URL, {
                     method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Master-Key': MASTER_KEY
-                    },
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': MASTER_KEY },
                     body: JSON.stringify(inventory)
                 });
                 renderTable();
-            } catch (err) {
-                console.error("خطأ حفظ البيانات:", err);
-            } finally {
-                showLoading(false);
-            }
+            } catch (err) { console.error(err); }
         }
 
         function renderTable() {
@@ -365,7 +289,7 @@ app.get('/', (req, res) => {
                 const med = inventory[name];
                 const totalIn = med.totalIn || 0;
                 const totalOut = med.totalOut || 0;
-                const unit = med.unit || 'صندوق'; // جلب الفئة المخزنة للعلاج
+                const unit = med.unit || 'صندوق';
                 const current = totalIn - totalOut;
 
                 const tr = document.createElement('tr');
@@ -375,9 +299,7 @@ app.get('/', (req, res) => {
                     <td style="color: #c62828; font-weight: bold;">\${totalOut} \${unit}</td>
                     <td style="background-color: #f7fbfc; font-weight: bold; color: var(--primary-color);">\${current} \${unit}</td>
                     <td>
-                        <button class="btn-action btn-delete" onclick="deleteMedicine('\${name}')">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
+                        <button class="btn-delete" onclick="deleteMedicine('\${name}')"><i class="fas fa-trash-alt"></i></button>
                     </td>
                 \`;
                 tbody.appendChild(tr);
@@ -391,15 +313,12 @@ app.get('/', (req, res) => {
             const qty = parseInt(document.getElementById('medQty').value);
             const unit = document.getElementById('unitType').value;
 
-            if (!name || isNaN(qty) || qty <= 0) return;
-
             if (!inventory[name]) {
                 inventory[name] = { totalIn: 0, totalOut: 0, unit: unit };
             }
-            
-            // تحديث الفئة في حال تغيرت مع المعاملة الجديدة
             inventory[name].unit = unit;
 
+            // الحسابات المضبوطة لمنع التداخل (سحب = خصم من المتبقي وزيادة حقل المسحوب فقط)
             if (action === 'add') {
                 inventory[name].totalIn += qty;
             } else if (action === 'subtract') {
@@ -411,10 +330,7 @@ app.get('/', (req, res) => {
         });
 
         async function deleteMedicine(name) {
-            if (confirm(\`هل أنت متأكد من حذف علاج (\${name}) نهائياً؟\`)) {
-                delete inventory[name];
-                await saveInventory();
-            }
+            if (confirm(\`حذف (\${name})؟\`)) { delete inventory[name]; await saveInventory(); }
         }
 
         document.getElementById('searchInp').addEventListener('input', renderTable);
@@ -426,5 +342,5 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`Pharmacy server is live on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
