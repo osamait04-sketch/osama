@@ -1,8 +1,8 @@
 const express = require('express');
-const app = express();
+const app = report => express();
 const PORT = process.env.PORT || 3000;
 
-// تشغيل السيرفر وعرض الواجهة المعدلة بالكامل
+// تشغيل السيرفر وعرض الواجهة الكاملة مع خيارات الحذف والتعديل
 app.get('/', (req, res) => {
     res.send(`
 <!DOCTYPE html>
@@ -11,13 +11,15 @@ app.get('/', (req, res) => {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>صيدلية محمد غسان الحديدي</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-weight/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --primary-color: #318084;
             --primary-hover: #256366;
             --bg-color: #eef2f5;
             --text-color: #333333;
+            --danger-color: #d9534f;
+            --warning-color: #f0ad4e;
         }
 
         body {
@@ -38,7 +40,7 @@ app.get('/', (req, res) => {
             transform: translate(-50%, -50%);
             font-size: 25rem;
             color: var(--primary-color);
-            opacity: 0.03; /* درجة الشفافية المائية */
+            opacity: 0.03;
             z-index: -1;
             pointer-events: none;
         }
@@ -49,7 +51,7 @@ app.get('/', (req, res) => {
             padding: 0 20px;
         }
 
-        /* خط عميق وكبير وعريض لاسم الصيدلية */
+        /* خط عميق وكبير لاسم الصيدلية */
         .pharmacy-title {
             text-align: center;
             font-size: 3.2rem;
@@ -186,12 +188,36 @@ app.get('/', (req, res) => {
             box-sizing: border-box;
         }
 
-        .btn-delete {
+        .actions-cell {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-action {
             background: none;
             border: none;
-            color: #d9534f;
             cursor: pointer;
             font-size: 1.1rem;
+            padding: 5px 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-edit {
+            color: var(--warning-color);
+        }
+
+        .btn-edit:hover {
+            background-color: #fcf8e3;
+        }
+
+        .btn-delete {
+            color: var(--danger-color);
+        }
+
+        .btn-delete:hover {
+            background-color: #fdf2f2;
         }
     </style>
 </head>
@@ -244,7 +270,7 @@ app.get('/', (req, res) => {
                             <th>الكمية الكلية</th>
                             <th>مجموع المسحوب</th>
                             <th>المتبقي في المخزن</th>
-                            <th>إجراءات</th>
+                            <th>إجراءات التحكم</th>
                         </tr>
                     </thead>
                     <tbody id="medicineTableBody"></tbody>
@@ -299,7 +325,14 @@ app.get('/', (req, res) => {
                     <td style="color: #c62828; font-weight: bold;">\${totalOut} \${unit}</td>
                     <td style="background-color: #f7fbfc; font-weight: bold; color: var(--primary-color);">\${current} \${unit}</td>
                     <td>
-                        <button class="btn-delete" onclick="deleteMedicine('\${name}')"><i class="fas fa-trash-alt"></i></button>
+                        <div class="actions-cell">
+                            <button class="btn-action btn-edit" onclick="editMedicine('\${name}')" title="تعديل الكميات">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-action btn-delete" onclick="deleteMedicine('\${name}')" title="حذف العلاج">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
                     </td>
                 \`;
                 tbody.appendChild(tr);
@@ -318,7 +351,6 @@ app.get('/', (req, res) => {
             }
             inventory[name].unit = unit;
 
-            // الحسابات المضبوطة لمنع التداخل (سحب = خصم من المتبقي وزيادة حقل المسحوب فقط)
             if (action === 'add') {
                 inventory[name].totalIn += qty;
             } else if (action === 'subtract') {
@@ -329,8 +361,36 @@ app.get('/', (req, res) => {
             await saveInventory();
         });
 
+        // دالة التعديل المباشر الذكي للكميات
+        async function editMedicine(name) {
+            const med = inventory[name];
+            const currentUnit = med.unit || 'صندوق';
+
+            const newTotalIn = prompt(\`تعديل علاج (\${name})\\n\\nأدخل الكمية الكلية الجديدة بالـ (\${currentUnit}):\`, med.totalIn);
+            if (newTotalIn === null) return; // إلغاء التعديل
+
+            const newTotalOut = prompt(\`أدخل مجموع المسحوب الجديد بالـ (\${currentUnit}):\`, med.totalOut);
+            if (newTotalOut === null) return; // إلغاء التعديل
+
+            const parsedIn = parseInt(newTotalIn);
+            const parsedOut = parseInt(newTotalOut);
+
+            if (isNaN(parsedIn) || isNaN(parsedOut) || parsedIn < 0 || parsedOut < 0) {
+                alert("الرجاء إدخال أرقام صحيحة!");
+                return;
+            }
+
+            // تطبيق التعديل الجديد وحفظه سحابياً
+            inventory[name].totalIn = parsedIn;
+            inventory[name].totalOut = parsedOut;
+            await saveInventory();
+        }
+
         async function deleteMedicine(name) {
-            if (confirm(\`حذف (\${name})؟\`)) { delete inventory[name]; await saveInventory(); }
+            if (confirm(\`هل أنت متأكد من حذف علاج (\${name}) نهائياً من النظام؟\`)) {
+                delete inventory[name];
+                await saveInventory();
+            }
         }
 
         document.getElementById('searchInp').addEventListener('input', renderTable);
