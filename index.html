@@ -214,16 +214,7 @@
         });
     }
 
-    // إزالة التثبيت والقيود تماماً عند اختيار اسم مكرر للسماح بتغيير النوع والكمية بحرية
-    medNameInput.addEventListener('input', function() {
-        const name = this.value.trim().toLowerCase();
-        const existingMed = medicines.find(m => m.name.toLowerCase() === name);
-        if (existingMed && editIndexInput.value === "-1") {
-            totalQtyInput.value = existingMed.total;
-            medUnitSelect.value = existingMed.unit || 'صندوق';
-        }
-    });
-
+    // تم حذف السطر القديم بالكامل لضمان عدم إجبار المتصفح على أي نوع قديم وترك الاختيار حر تماماً للطبيب
     medicineForm.addEventListener('submit', function(e) {
         e.preventDefault();
         const name = medNameInput.value.trim();
@@ -240,14 +231,13 @@
         } else {
             const existingIndex = medicines.findIndex(m => m.name.toLowerCase() === name.toLowerCase());
             if (existingIndex > -1) {
-                // دمج السحب إذا تكرر، مع تحديث الكلي والنوع حسب الإدخال الجديد فوراً
                 const newWithdrawnSum = medicines[existingIndex].withdrawn + withdrawn;
                 if (newWithdrawnSum > total) {
                     alert(`خطأ: مجموع السحوبات الحالي (${newWithdrawnSum}) يتجاوز الكمية الكلية الجديدة (${total})!`);
                     return;
                 }
                 medicines[existingIndex].total = total;
-                medicines[existingIndex].unit = unit;
+                medicines[existingIndex].unit = unit; // يتم تحديث النوع هنا فوراً حسب اختيارك الجديد بدون أخطاء
                 medicines[existingIndex].withdrawn = newWithdrawnSum;
             } else {
                 if(withdrawn > total) { alert('خطأ: المسحوب أكبر من الكلي!'); return; }
